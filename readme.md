@@ -43,3 +43,16 @@ latexmk -c
 ## Contributing
 
 [Bug reports and pull requests are welcome on GitHub](https://github.com/SCD-Aix-Marseille-Universite/latexamu).
+
+
+## Understanding 
+
+\gls{SDE} --> ref accronyme pour le glossaire
+
+\og naturelle \fg --> "naturelle"
+
+Figure~\ref{photo_centrifugeuse} 
+
+\qtyproduct{364 x 206 x 131}{\mm}
+
+Ajout d'une citation entre parenthèses~\parencite{godard_borreliose_2012} avec la commande \textit{\textbackslash parencite}. Ajout d'une citation simple de \cite{zohdy_mapping_2012} avec la commande \textit{\textbackslash cite}. Ajout d'une citation avec année et page entre parenthèses de \textcite[9]{godard_borreliose_2012} avec la commande \textit{\textbackslash textcite}. La citation suivante, sur la même page, de \textcite[12]{godard_borreliose_2012} utilise ibidem avec le style de citation \textit{authoryear-ibid} et l'utilisation des options biblatex \textit{pagetracker} et \textit{ibidtracker}.

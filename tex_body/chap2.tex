@@ -1,72 +1,77 @@
-\chapter{ Méthodologie de la recherche}
+\chapter{Techniques to Improve SDE/SPDE Inference}
 \chaptertoc{}
 
-\section{Matériel et méthodes}
+\section{Presentation of Practical Challenges}
 
-	\subsection{Modèle animal}
+When acquiring any type of data, an experimentalist has to face two challenges among several others. The first is the time between two measurements, called the sampling time, which we would like to be as small as possible. However, many practical issues constrain the sampling time. As an example, fluorescent proteins used to image the biological object of interest lose their fluorescent properties when acquiring several different images. Thus, for fluorescent proteins, increasing the sampling time is particularly interesting for increasing the observation time. The second issue is the measurement error, defined as the difference between a measured value of a quantity and its unknown true value. Any measurement has its inherent measurement error. Thus, it is very important that any inference method is robust to measurement noise.
 
-	\lipsum[1]\index{Lorem ipsum}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig/illustration_signal_2.png}
+    \caption{Schema of the measured expiremental signal versus the real signal, which is impacted by sampling interval and measurement noise.}
+    \label{fig:enter-label}
+\end{figure}
 
-	Une première note de fin de document\endnote{Première note de fin de document.}, une deuxième\endnote{Deuxième note de fin de document.} et \ldots \endnote{\ldots note de fin de document.} \endnote{\ldots note de fin de document.} \endnote{\ldots note de fin de document.} \endnote{\ldots note de fin de document.} \endnote{\ldots note de fin de document.} \endnote{\ldots note de fin de document.} \endnote{\ldots note de fin de document.}: le package enotez associé à hyperref permet l'appel et le retour de note\endnote{\lipsum[1]\index{Lorem ipsum}}.
+\section{Robustness with Large Sampling Intervals}
+In the previous chapter, we derived an estimator for the drift that uses the assumption $\frac{\Delta \bm{x_t}}{\Delta t} \approx \bm{f}(\bm{x_t})$ which relies on the sampling interval $\Delta t \to 0$. What is going to happen to the drift estimator if $\Delta t \to 0$ ? To answer this question, we need to take a look at 
+\begin{equation}
+    \frac{\Delta\bm{x_t}}{\Delta t} = \frac{1}{\Delta t}\int_t^{t+\Delta t} \left(\bm{f}(\bm{x_{t'}}) + \bm{\xi_{t'}} \right)\dd{t'}
+    \label{eq:delta_x}
+\end{equation}. To understand its behavior when $\Delta t$ increases, we Taylor expand $\bm{f}(\bm{x_{t'}})$ around $\bm{x_t}$ :
+\begin{align}
+    \bm{f}(\bm{x_{t'}}) &= \bm{f}(\bm{x_t}) + (\bm{x_t'} - \bm{x_{t}}).\nabla \bm{f}(\bm{x_t}) + \bm{D(x_t)}.\nabla^2\bm{f}(\bm{x_t}) (t'-t) + O(\Delta t^2) + O_\text{fluc}(\Delta t^{3/2})\\
+    &= \bm{f}(\bm{x_t}) + \underbrace{\left(\bm{f}(\bm{x_t}).\nabla \bm{f}(\bm{x_t}) + \bm{D(x_t)}.\nabla^2\bm{f}(\bm{x_t})\right)}_{\bm{A}} (t'-t)  +O(\Delta t^2) + O_\text{fluc}(\Delta t^{1/2})
+    \label{eq:Taylor_b}
+\end{align}
+where $\bm{D(x_t)}.\nabla^2\bm{f}(\bm{x_t})  = \sum_{\beta, \gamma} D_{\beta\gamma}(\bm{x_t})\pdv{\bm{f}}{x_{\beta}}{x_{\gamma}}$ and $O_\text{fluc}(\Delta t^{3/2})$ contains fluctuating terms such as $\int_t^{t+\Delta t}\bm{f(x_{t'})} \dd{t'} \int_t^{t+\Delta t}\bm{\xi_{t'}} \dd{t'}$ and higher orders. Thus, a more appropriate formulation for large sampling interval is $\frac{\Delta\bm{x_t}}{\Delta t} = \bm{f}(\bm{x_t}) + \bm{A} \frac{\Delta t}{2} + O(\Delta t^2) + O_\text{fluc}(\Delta t^{-1/2})$. But, by choosing $t'= t + \Delta t$ in \Eq{eq:Taylor_b}, we realize that $\bm{A} \approx \frac{\bm{f}(\bm{x_{t+ \Delta t})} - \bm{f}(\bm{x_t)}}{\Delta t}$ which leads to :
+\begin{equation}
+    \frac{\Delta\bm{x_t}}{\Delta t} = \frac{\bm{f}(\bm{x_{t+\Delta t})} + \bm{f}(\bm{x_t)}}{2}  + O(\Delta t^2) + O_\text{fluc}(\Delta t^{-1/2})
+    \label{eq:delta_x_trapeze}
+\end{equation}
+So finally, we demonstrated that the trapeze formulation works for SDE integral. Wouaahhh, amazing. The interesting thing is to leverage this knowledge to improve the robustness of our drift estimator. To do so, we suppose that there exists a function base $\mathcal{B} = \{\bm{b_i}\}_{i=1,n}$ where $\bm{f}$ can be decomposed on such that : $\bm{f}(\bm{x}) = \sum_i \alpha_i\bm{b}_i(\bm{x})$. By multiplying \Eq{eq:delta_x_trapeze} by $\bm{b_i} \frac{\bm{\bar{D}}^{-1}}{4}$ and averaging over time, we get a simple equation 
+\begin{equation}
+    \avg{\frac{\Delta\bm{x_t}}{\Delta t}\cdot \frac{\bm{\bar{D}}^{-1}}{4}\bm{b_i}(\bm{x_t)}} = \sum_j \underbrace{\avg{\frac{\bm{b_j(x_t)} + \bm{b_j(x_{t+\Delta t})}}{2} \cdot \bm{\bar{D}}^{-1}\bm{b_i(x_t)}}}_{\left(G_{\mathcal{B}}^{Tr}\right)_{ij}} \alpha_j 
+    \label{eq:chap_1_alpha_trapeze}
+\end{equation}
+which we can invert to obtain the learned parameters $\hat{\alpha_i}^{Tr}$
+\begin{equation}
+    \hat{\alpha_i}^{Tr} = \sum_j \left(G_{\mathcal{B}}^{Tr}\right)^{-1}_{ij} \avg{\frac{\Delta\bm{x_t}}{\Delta t}\cdot \bm{\bar{D}}^{-1}\bm{b_j}(\bm{x_t)}}
+\end{equation}
+Note that this estimator doesn't derive from the maximization of a likelihood function but when $\Delta t \to 0$, $\hat{\alpha_i}^{Tr}\to \hat{\alpha_i}$ which is a likelihood estimator. From the previous derivation, we expect that the reconstructed drift with $\hat{\alpha}_i$ has an error in $O(\Delta t)$ but for the reconstructed drift with the trapeze formulation $\hat{\alpha_i}^{Tr}$ we expect to have an error in $O(\Delta t^2)$. Indeed, we observe this behavior in \Fig{fig:Lorenz_benchmark}. This work leads to co-publication in~\cite{amiriInferringGeometricalDynamics2024}. Note that, I discovered recently that another PhD student was working on the same question and obtained the same trapeze estimator but with a different demonstration in~\cite{wannerHigherOrderDrift2024}.
 
-	\subsection{Traitement expérimental}
-
-		\subsubsection{Hypergravité}
-			\label{hypergravite} % on peut mettre systématiquement un \label après chaque titre de partie au cas où un appel \ref{} serait nécessaire
-
-			L'hypergravité consiste à augmenter la force du vecteur gravitaire en lui sur-imposant la force centrifuge. En effet, la force centrifuge induite par la rotation se surimpose à la gravité terrestre ce qui permet d'avoir une force résultante dépendante de la vitesse de rotation. On utilise pour cela des centrifugeuses qui sont des carrousels équipés de nacelles suspendues à des axes libres permettant à la force résultante d'être perpendiculaire au plancher de la nacelle et ainsi obtenir une «gravité» dont la force est supérieure à la gravité terrestre tout en maintenant, pour les individus expérimentaux, l'orientation \og naturelle \fg de celle-ci.
-		
-		\subsubsection{La centrifugeuse}
-
-			Les caractéristiques techniques de la centrifugeuse\index{centrifugeuse} ont été décrites dans un article de~\cite{jamon_ground-based_2008} et dans la partie~\ref{hypergravite}. Brièvement, la centrifugeuse (Figure~\ref{photo_centrifugeuse}) est de grand diamètre (jusqu'à \SI{3.6}{\m} en rotation). Pour limiter les vibrations, la centrifugeuse repose sur des dispositifs anti-vibrations. Le bruit produit par la centrifugeuse est faible. A un mètre de distance, le niveau sonore n'est que de \SI{58}{\dB} contre \SI{52}{\dB} si la centrifugeuse est arrêtée. Les nacelles sont sur des axes libres et chacune peut contenir trois cages de type standard \qtyproduct{364 x 206 x 131}{\mm} avec 4 souris par cage, soit un total de 48 souris. La centrifugeuse est équipée de caméras infra-rouge couplées à un système de vidéo-surveillance accessible sur internet. Cela nous permet de contrôler les niveaux d'eau et de nourriture ainsi que de conduire des études de l'activité des individus expérimentaux à distance, de jour comme de nuit. La quantité d'eau et de nourriture disponible par cage permet de faire fonctionner la centrifugeuse 3 semaines sans interruption. Les animaux ont à disposition \SI{400}{\g} de nourriture et \SI{500}{\ml} d'eau, mais la consommation de nourriture sur cette période est en moyenne de \SI{209(14)}{\g}, et la consommation d'eau de \SI{258(21)}{\ml} pour une cage de 4 souris.
-
-			\begin{figure}[h!tbp]
-				\vspace{0.5cm}
-				\setcapindent{2em}
-				\centering
-				\includegraphics[width=0.7\textwidth]{photo_centrifugeuse.png}
-				\caption[Photographie de la centrifugeuse]{Photographie de la centrifugeuse utilisée.}
-				\label{photo_centrifugeuse}
-			\end{figure}
-
-			\lipsum[2]\index{Nam dui ligula}
-
-\section{Deuxième partie du deuxième chapitre}
-
-	Le faisceau passe ensuite dans un module comprenant un cristal non linéaire permettant de doubler le féquence (excitation de \SIrange{345}{500}{\nano\meter}). Toutes les mesures ont été faites entre \SIlist{400;1200}{\nano\meter} avec un pas de \SI{5}{\nano\meter}.
-	
-	\lipsum[3]\index{Nulla malesuada}
-
-	\subsection{Première sous-partie de la deuxième partie}
-
-		\lipsum[4]\index{Quisque ullamcorper}
-
-	\subsection[Sous-partie 2]{Deuxième sous-partie de la deuxième partie} % entre [] pour le texte dans la TOC
-
-		Ajout d'une nouvelle entrée d'index de la centrifugeuse\index{centrifugeuse}. Les entrées \gls{+a} \gls{2a} \gls{ca} \gls{Aa} \gls{aa} \gls{alpha} {\NoAutoSpaceBeforeFDP}sont dans la nomenclature. On peux utiliser les commandes personnelles pour appeler rapidement des formules lors de la rédaction \acc et passer des arguments aux commandes pour en modifier l'éxécution \emiss[\nu]{\Omega}.
-		
-		\subsubsection{Ce titre de partie ne s'affiche pas dans la TOC (tocdepth=2) mais dans la TOC locale (etocsettocdepth=3)}
-
-			Voir (Tableaux~\ref{table:alpha}~et~\ref{table:butcher}).
-
-			\paragraph{Ce titre de partie n'est pas numéroté (secnumdepth=3)}~~\\ % ~~\\ fait le saut de ligne après le titre de 'paragraph' sinon le texte suivant est accolé au titre
-
-				% ce saut de ligne indente le texte de 'paragraph' sinon le paragraphe débute à la marge
-				Ajout d'une citation entre parenthèses~\parencite{godard_borreliose_2012} avec la commande \textit{\textbackslash parencite}. Ajout d'une citation simple de \cite{zohdy_mapping_2012} avec la commande \textit{\textbackslash cite}. Ajout d'une citation avec année et page entre parenthèses de \textcite[9]{godard_borreliose_2012} avec la commande \textit{\textbackslash textcite}. La citation suivante, sur la même page, de \textcite[12]{godard_borreliose_2012} utilise ibidem avec le style de citation \textit{authoryear-ibid} et l'utilisation des options biblatex \textit{pagetracker} et \textit{ibidtracker}.
-
-			\paragraph{Plusieurs figures côte à côte}~~\\
-
-				\lipsum[66]
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig/Lorenz_sampling_measurement noise_benchmark.png}
+    \caption{NEED TO be done}
+    \label{fig:Lorenz_benchmark}
+\end{figure}
 
 
-				\begin{figure}
-					\centering
-					\subfloat[Figure A]{\includegraphics[width=.5\textwidth, max height=2in]{example-image-a}}
-					\subfloat[Figure B]{\includegraphics[width=.5\textwidth, max height=2in]{example-image-b}}
-					\caption{Deux figures}
-					\label{fig:deux_figures}
-				\end{figure}
 
-			\paragraph{Paramétrer siunitx avec sisetup}~~\\
-			
-        		Célérité de la lumière dans le vide: $$c=\SI{2.99792458e8}{\meter\per\second}$$
+
+
+
+
+
+
+
+
+
+\section{Robustness Against Measurement Noise}
+
+Measurement noise can be decomposed into two categories: the systematic error which always occurs with the same value (for instance, a wrongly calibrated balance), and the random error that varies from one observation to another. Here, we are only considering the random error by modeling the measurement noise as a Gaussian random variable which is added to the true trajectory $\bm{x_t} \rightarrow \bm{x_t} + \bm{\eta_t}$ with $\bm{\eta_t} \sim \mathcal{N}(0, \bm{\sigma})$. This simple measurement noise is going to affect our inferred drift. How ? Let us look at our estimator for the instantaneous drift $\frac{\Delta \bm{x_t}}{\Delta{t}} \rightarrow \frac{\Delta \bm{x_t}}{\Delta{t}} + \frac{\Delta \bm{\eta_t}}{\Delta{t}}$. From that, we see the dramatic coupling between the measurement noise and sampling interval: the standard deviation of the measurement noise is amplified by a prefactor $\frac{1}{\Delta t}$ which can be considerably big. Thus, when we infer the drift using the average : 
+\begin{equation}
+    \avg{\left(\frac{\Delta \bm{x_t}}{\Delta{t}} + \frac{\Delta \bm{\eta_t}}{\Delta{t}}\right)\cdot \frac{\bm{\bar{D}}^{-1}}{4}\bm{b_j}\left(\bm{x_t + \eta_t}\right)} = \avg{\frac{\Delta \bm{x_t}}{\Delta{t}} \cdot \frac{\bm{\bar{D}}^{-1}}{4}\bm{b_j}\left(\bm{x_t + \eta_t}\right)} + \avg{\frac{\Delta \bm{\eta_t}}{\Delta{t}}\cdot \frac{\bm{\bar{D}}^{-1}}{4}\bm{b_j}\left(\bm{x_t + \eta_t}\right)}
+\end{equation}
+the term $\avg{\frac{\Delta \bm{\eta_t}}{\Delta{t}}\cdot \frac{\bm{\bar{D}}^{-1}}{4}\bm{b_j}\left(\bm{x_t + \eta_t}\right)}$ is of order $\frac{\sigma^2}{\Delta t}$ and it is going to strongly bias our inference. We need a way to ensure this term to average to zero. How can we do that ? One way is to average over $\bm{b_j}(\bm{x_{t-\Delta t}})$ instead of $\bm{b_j}(\bm{x_t})$. Thus, we obtain : 
+
+\begin{multline*}
+    \avg{\left(\frac{\Delta \bm{x_t}}{\Delta{t}} + \frac{\Delta \bm{\eta_t}}{\Delta{t}}\right)\cdot \frac{\bm{\bar{D}}^{-1}}{4}\bm{b_j}\left(\bm{x_{t-\Delta t} + \eta_{t-\Delta t}}\right)} = \avg{\frac{\Delta \bm{x_{t}}}{\Delta{t}} \cdot \frac{\bm{\bar{D}}^{-1}}{4}\bm{b_j}\left(\bm{x_{t-\Delta t} + \eta_{t-\Delta t}}\right)} \\
+    + \avg{\frac{\Delta \bm{\eta_t}}{\Delta{t}}\cdot \frac{\bm{\bar{D}}^{-1}}{4}\bm{b_j}\left(\bm{x_{t-\Delta t} + \eta_{t-\Delta t}}\right)}
+\end{multline*}
+
+
+\section{Comparative Discussion of Both Techniques}
+Evaluate the advantages, limitations, and optimal conditions for each method.
+
+

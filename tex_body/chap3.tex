@@ -1,47 +1,30 @@
-\chapter{ Résultats}
+\chapter{Comparison and Selection of Parsimonious Models}
 \chaptertoc{}
 
-\section{Modèles}
 
-	%% tableau nécessitant des filets verticaux
-	\begin{table}[h!tbp]
-		\begin{center}
-			\begin{tabular}{c|*{5}{c}}
-			0\\
-			$c_2$    & $a_{21}$\\
-			$c_3$    & $a_{31}$ & $a_{32}$\\
-			$\vdots$ & $\vdots$ &           & $\ddots$\\
-			$c_s$    & $a_{s1}$ & $a_{s2}$  & $\cdots$ & $a_{s,s - 1}$\\
-			\hline
-			         & $b_1$    & $b_2$     & $\cdots$ & $b_{s-1}$     & $b_s$\\
-			\end{tabular}
-		\end{center}
-		\caption{Tableau de Butcher}
-		\label{table:butcher}
-	\end{table}
+\section{The Problem of Model Selection}
+Discuss the necessity of an approach that selects the simplest model without compromising performance.
 
-	%% tableau avec booktabs (sans filets verticaux)
-	\begin{table}[h!tbp]
-		\begin{center}
-			\begin{tabular}{@{}lcc@{}} \toprule
-			$\lambda$ (nm) & $(\alpha_{\lambda}/\alpha_{426,7})_{moy}$ & écart type \\ \midrule
-			391,9 \& 392,1 & 0,12 & 0,01 \\
-			588,9 \& 589,2 & 0,45 & 0,07 \\
-			657,8 \& 658,3 & 6,70 & 0,06 \\
-			711,3 & 0,16 & 0,01 \\
-			711,6 & 0,15 & 0,01 \\
-			712 & 0,31 & 0,02 \\ \bottomrule
-			\end{tabular}
-		\end{center}
-		\caption[Valeur moyenne et écart type des rapports $\alpha_{\lambda}/\alpha_{426,7}$]{Valeur moyenne et écart type des rapports $\alpha_{\lambda}/\alpha_{426,7}$ mesurés pour les chocs plasma de la deuxième série.}
-		\label{table:alpha}
-	\end{table}
+\section{Theoretical Foundations of the Proposed Method}
+\subsection{Wilks' Theorem in this Context}
+Present the application of Wilks' theorem to the model selection problem.
 
-%\newpage
+\subsection{Role of Large Deviation Calculations}
+Explain how large deviation calculations are used for performance evaluation.
 
-\section{Articles}
+\section{Development of the Method}
+\subsection{Theoretical Derivations}
+Detail the theoretical derivations underpinning the method.
 
-	\fullcite{mohamed_clinical_2014}
-	% avant d'intégrer un article dans votre thèse, consulter http://www.sherpa.ac.uk/romeo/ si vous souhaitez diffuser sur internet
-	\includepdfset{pagecommand=\thispagestyle{scrheadings}} % ajoute la numérotation continue des pages aux fichiers pdf importés
-	\includepdf[scale=0.9,pages=-]{BMC-1471-2334-14-S2-O1.pdf} % 'scale' ajuste la taille du pdf, vous pouvez affiner en fonction des marges
+\subsection{Implementation Details and Algorithms}
+Provide the algorithmic implementation and practical details.
+
+\section{Numerical Studies and Comparison with Existing Methods}
+\subsection{Presentation of Simulation Results}
+Show the results obtained from simulations.
+
+\subsection{Discussion on Robustness and Efficiency}
+Discuss the robustness and efficiency of the proposed method compared to existing techniques.
+
+\section{Interpretations and Implications}
+Consider the impact on model selection in similar contexts and potential generalizations.
